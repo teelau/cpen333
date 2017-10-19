@@ -1,0 +1,5 @@
+/bin
+*.sln
+*.vcxproj*
+Debug
+*.exe
