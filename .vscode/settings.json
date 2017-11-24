@@ -71,6 +71,7 @@
         "cwctype": "cpp",
         "numeric": "cpp",
         "optional": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "atomic": "cpp"
     }
 }

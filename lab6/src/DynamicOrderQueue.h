@@ -33,8 +33,9 @@ class DynamicOrderQueue : public virtual OrderQueue {
     {
     unique_lock<decltype(mutex_)> lock{mutex_};
     buff_.push_back(order);
-    }
     cv_.notify_one();
+    }
+
   }
 
   Order get() {
@@ -48,13 +49,14 @@ class DynamicOrderQueue : public virtual OrderQueue {
     // get first item in queue
     {
     unique_lock<decltype(mutex_)> lock{mutex_};
-    cv_.wait(lock, [&](){return !buff_.empty() });
+    cv_.wait(lock, [&](){return !buff_.empty(); });
     Order out = buff_.front();
     buff_.pop_front();
+    return out;
 
     }
 
-    return out;
+
   }
 };
 
