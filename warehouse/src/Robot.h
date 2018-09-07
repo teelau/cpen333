@@ -7,10 +7,12 @@
 #include <iostream>
 #include <thread>
 #define VISITED '.'
-
+#include "Order.h"
 // #include "Order.h"
 // #include "OrderQueue.h"
 #include "safe_printf.h"
+#include "DynamicOrderQueue.h"
+#include "Order.h"
 
 /**
  * The Chef grabs orders from a queue, cooks them,
@@ -22,7 +24,7 @@ class Robot : public cpen333::thread::thread_object {
   // OrderQueue& serve_;
   cpen333::process::shared_object<SharedData> memory_;
   cpen333::process::mutex mutex_;
-
+  vector<Order> order;
   // local copy of maze
   WarehouseInfo minfo_;
   int id_; //robot index
@@ -34,7 +36,7 @@ class Robot : public cpen333::thread::thread_object {
    * @param orders queue to read orders from
    * @param serve queue to add completed orders to
    */
-  Robot(int id/*, OrderQueue& orders, OrderQueue& serve*/) :
+  Robot(int id/* DynamicOrderQueue order_queue*//*, OrderQueue& orders, OrderQueue& serve*/) :
 
       id_(id), memory_(WAREHOUSE_MEMORY_NAME), mutex_(WAREHOUSE_MUTEX_NAME)/*, orders_(orders), serve_(serve)*/ 
       {
@@ -68,13 +70,13 @@ class Robot : public cpen333::thread::thread_object {
     memory_->rinfo.rloc[id_][ROW_IDX] = r;
 
     //run into exit / wall / visited
-    if(minfo_.maze[c][r] == EXIT_CHAR)
+    if(minfo_.maze[c][r] == WALL_CHAR || minfo_.maze[c][r] == VISITED || minfo_.maze[c][r] == SHELF_CHAR)
     {
-      returnval = 1;
       return;
     }
-    else if(minfo_.maze[c][r] == WALL_CHAR || minfo_.maze[c][r] == VISITED || minfo_.maze[c][r] == SHELF_CHAR)
+    else if(minfo_.maze[c][r] == EXIT_CHAR)
     {
+      
       return;
     }
 
@@ -124,8 +126,9 @@ class Robot : public cpen333::thread::thread_object {
 
     safe_printf("Robot %d started at ( %d, %d)\n", id_,loc_[COL_IDX],loc_[ROW_IDX]);
 
-    safe_printf("status: %d ",go());
+    //safe_printf("status: %d ",go());
     // Order order = orders_.get();
+
     while (true) {
       // if(order.poison == 1)
       //   break;

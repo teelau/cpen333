@@ -14,7 +14,7 @@ class Product{
   }
   
   void setName(string s){
-    this->name = s;
+    this->name = s;3
   }
   friend bool operator<(const Product& a, const Product& b) {
     return a.name < b.name;

@@ -7,26 +7,27 @@
 #include "Robot.h"
 #include "safe_printf.h"
 #include "Shelf.h"
+#include <queue>
+#include "DynamicOrderQueue.h"
+#include "Order.h"
+#include "Truck.h"
 
 
 using namespace std;
 
-static const char GET_LOW_STOCK = '1';
-static const char GET_ORDER_STATUS = '2';
-static const char CLIENT_QUIT = '3';
+static const char CLIENT_QUIT = '1';
+static const char GET_LOW_STOCK = '2';
+static const char GET_ITEM_STOCK = '3';
+static const char GET_ORDER_STATUS = '4';
+static const char ADD_TEST_ORDERS = '5';
+static const char ADD_DELIVERY_TRUCK = '6';
+static const char ADD_RESTOCK_TRUCK = '7';
 
 // print menu options
 void print_menu() {
 
-  safe_printf( "MENU\n");
-  safe_printf( "====\n");
-  safe_printf( " (1) get low stock items\n");
-  safe_printf( " (2) get order status\n");
-  safe_printf( " (3) get stock of an item\n");
-  safe_printf( " (3) quit\n");
-  safe_printf( " (4) add order of 5 apples\n");
-  safe_printf( " (5) add order of 2 oranges\n");
-  safe_printf( "Enter number: \n");
+  safe_printf( "MANAGER MENU\n============\n(1) quit\n(2) get low stock items\n(3) get stock of an item\n(4) get order status\n(5) add test order of 10 apples\n(6) add a delivery truck\n(7) add a restock truck\n");
+  safe_printf( "Enter a number:\n");
   std::cout.flush();
 
 }
@@ -83,22 +84,86 @@ void init_robots(const WarehouseInfo& minfo, RunnerInfo& rinfo) {
 }
 
 //find shelves and mark location
-void init_shelves(vector<Shelf>& shelves, const WarehouseInfo& minfo, map<int, string>& product_map) {
+void init_shelves(vector<Shelf>& shelves, const WarehouseInfo& minfo, map<int, string>& product_map, map<string, int>& product_inventory, map<string,int>&product_weight) {
     for(int i = 0; i < minfo.cols; i++){
       for(int j = 0; j < minfo.rows; j++){
         if(minfo.maze[i][j] == SHELF_CHAR)
         {
           cout << "Shelf " << shelves.size() + 1;
-          Shelf shelf_init(i,j,product_map);
+          Shelf shelf_init(i,j,product_map, product_inventory,product_weight);
           shelves.push_back(shelf_init);
         }
       }
     }
 }
 
+void get_stock(string input, map<string,int>&product_inventory){
+  if(product_inventory.find(input) != product_inventory.end())
+    cout<< "Product "<<input<<" has "<<product_inventory[input]<< " in stock\n\n"<<endl;
+  else
+    safe_printf("Product not found\n\n");
+}
+
+void get_lowstock(map<string,int>&product_inventory){
+  int lowinstock=0;
+  for( auto & it : product_inventory){
+    if(it.second <= 20){
+      cout<< "Warning: " << it.first << " low in stock: " << it.second;
+      safe_printf("\n");
+      lowinstock = 1;
+    }
+  }
+    if(!lowinstock){
+      safe_printf("Nothing low in stock\n");
+    }
+
+}
+
+void add_test_order(DynamicOrderQueue& order_queue, vector<Shelf>& shelves, map<string,int>&product_inventory, int& order_count){
+    Product p("apple",2);
+    int quantity = 10;
+
+    Order o(order_count, ORDER_STATUS_NEW);//initialize order
+    o.add(p,quantity);
+    safe_printf("Added order (id):%d\n",order_count);
+    order_count++;
+    for (const auto& p : o.products) {
+      safe_printf("Order contains %d %s\n", p.second, p.first.name.c_str());
+    }
+
+    //check if stuff is in stock
+    for (const auto& p : o.products) {
+
+      if (product_inventory[p.first.name] - p.second < 0) {
+        safe_printf("Not enough stock\n");
+        return;
+      }
+      else
+        safe_printf("%s in stock\n",p.first.name.c_str());
+
+      for (Shelf& s : shelves) {
+        if (s.contains_product(p.first)) {
+          int n = s.remove(p.first, quantity);
+          quantity -= n;
+          product_inventory[p.first.name] -= n;
+          o.col_destination1 = s.col_;
+          o.row_destination1 = s.row_;
+          safe_printf("\t%d taken off shelf at location {%d, %d}\n", n, s.col_, s.row_);
+        }
+      }
+
+      order_queue.add(o);
+    }
+}
+
+void get_order_status(DynamicOrderQueue& order_queue){
+  for (deque<Order>::iterator it = order_queue.buff_.begin(); it!=order_queue.buff_.end(); ++it)
+    safe_printf("Order %d with status %d\n",it->order_id,it->order_status);
+}
+
 int main(int argc, char* argv[]) {
 
-    std::string warehouselayout = "data/warehouse.txt";
+    std::string warehouselayout = "data/maze1.txt";
     if (argc > 1) {
         warehouselayout = argv[1];
     }
@@ -113,27 +178,32 @@ int main(int argc, char* argv[]) {
     const int nrobots = 4;
     const int nshelves = 15;
 
-    //order queue
-    //WarehouseOrderQueue = order_queue;
     //dock queue
     //WarehouseDockQueue = dock_queue;
-    //task_queue
-    //TaskQueue = task_queue;
+    //truck queue
+    DynamicOrderQueue order_queue;
+    int order_count = 0;
+    vector<Truck*> trucks;
     map<int, string> product_map{{0,"apple"},{1,"orange"},{2,"banana"},{3,"carrot"},{4,"potato"}};
+    map<string, int> product_weight{{"apple",2},{"orange",2},{"banana",2},{"carrot",2},{"potato",3}};
     vector <Shelf> shelves;
-    init_shelves(shelves, memory->minfo, product_map);
-    cout << "Shelves initialized, products distributed.\n";
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    map<string, int> product_inventory;
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    init_shelves(shelves, memory->minfo, product_map, product_inventory, product_weight);
+    safe_printf( "Shelves initialized, products distributed.\n");
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     //initialize robots
     vector<Robot*> robots;
     for( int i = 0; i < 4; i++){
-        robots.push_back( new Robot(i/*, order_queue, dock_queue*/));
+        robots.push_back( new Robot(i/*, order_queue, dock_queue*//*, order_queue*/));
     }
-    cout<< "Locations of robots initialized.\n";
+    safe_printf("Locations of robots initialized.\n");
 
     for (auto& r : robots) {
         r->start();
     }
+
+
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     //main menu activity
@@ -147,14 +217,31 @@ int main(int argc, char* argv[]) {
       std::cin.ignore (std::numeric_limits<std::streamsize>::max(), '\n');
 
       switch(cmd) {
-        case GET_LOW_STOCK:
-          //do_add(api);
-          break;
-        case GET_ORDER_STATUS:
-          //do_remove(api);
-          break;
         case CLIENT_QUIT:
-          //do_goodbye(api);
+          break;
+        case GET_LOW_STOCK:{
+          get_lowstock(product_inventory);
+          break;
+        }
+        case GET_ITEM_STOCK:{
+          safe_printf("Enter a product name: \n");
+          char input[100];
+          cin.getline(input, sizeof(input));
+          string str = input;
+          get_stock(str, product_inventory);
+          break;
+        }
+        case GET_ORDER_STATUS:{
+          get_order_status(order_queue);
+          break;
+        }
+        case ADD_TEST_ORDERS:{
+          add_test_order(order_queue,shelves,product_inventory,order_count);
+          break;
+        }
+        case ADD_DELIVERY_TRUCK:
+          break;
+        case ADD_RESTOCK_TRUCK:
           break;
         default:
           std::cout << "Invalid command number " << cmd << std::endl << std::endl;

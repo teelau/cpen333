@@ -9,6 +9,7 @@
 #include "Product.h"
 #include "Shelf.h"
 #include <map>
+#include "Order.h"
 using namespace std;
 
 class TestException : public std::exception {
@@ -34,6 +35,14 @@ void test_product_map(map<int, string>& pmap){
     if(pmap[0] != "apple")
         throw TestException("Failed to access products");
 }
+
+void test_add_products_to_order(Order o, Product p1, Product p2, int q1, int q2, int total){
+    o.add(p1, q1);
+    o.add(p2, q2);
+
+    if( o.products[p1] != total )
+        throw TestException("Failed to add product on order");
+}
 // void test_product_get_weight(Product p, int wt){
 //     if(p.getWeight()!=wt){
 //         throw TestException("Failed to get weight");
@@ -57,21 +66,26 @@ int main(){
     try{
         Product p("hello",2);
         Product p2("goodbye",3);
+        Product p1("hello",2);
+        Order o(1,0);
         map<int, string> product_map{{0,"apple"},{1,"orange"},{2,"banana"},{3,"carrot"},{4,"potato"}};
 
 
         test_product_add_name(p,"hello");
-
+        test_product_add_name(p2,"goodbye");
+        test_product_add_name(p1,"hello");
         test_product_map(product_map);
 
-        cout<<"Size of product map = " << product_map.size() << endl;
+        //cout<<"Size of product map = " << product_map.size() << endl;
         //test_product_get_weight(p,8);
         // test_product_overload_op(p, "hello");
         // test_product_overload_product(p,p2);
         // Shelf a(1,1,product_map);
         // cout<< "Shelf Location: " << a.col_ << " " << a.row_ << endl;
         // cout<< "Random number generated: " << a.random << endl;
-
+        test_add_products_to_order(o,p,p,6,6,12);
+        test_add_products_to_order(o,p,p,1,1,2);
+        test_add_products_to_order(o,p,p2,6,6,6);
 
 
 

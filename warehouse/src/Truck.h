@@ -3,11 +3,12 @@
 
 #define MAXWEIGHT_ROBOT 50
 #define MAXWEIGHT_TRUCK 200
-#define MAXWEIGHT_SHELF 100
+//#define MAXWEIGHT_SHELF 100
 
 #include <iostream>
 #include <string>
-#include <pair>
+#include <vector>
+#include "Product.h"
 
 
 class Truck{
@@ -15,38 +16,38 @@ class Truck{
   int max_weight = MAXWEIGHT_TRUCK;
   vector<Product> products;
   bool docked;
-}
+};
 
 class DeliveryTruck : public Truck{
   public:
   bool addProduct(Product p){
-    
+    ;
   }
-}
+};
 
 class RestockingTruck: public Truck{
   public:
   bool removeProduct(Product p){
-    
+    ;
   }
-}
+};
 
-class Location{
-  public:
-  int x;
-  int y;
+// class Location{
+//   public:
+//   int x;
+//   int y;
 
-  Location(int X, int Y){
-    this->x = X;
-    this->y = Y;
-  }
+//   Location(int X, int Y){
+//     this->x = X;
+//     this->y = Y;
+//   }
   
-  void setLocation(int X, int Y){
-    this->x = X;
-    this->y = Y;
-    return;
-  }
-}
+//   void setLocation(int X, int Y){
+//     this->x = X;
+//     this->y = Y;
+//     return;
+//   }
+// }
 
 // class Shelf{
 //   public:
