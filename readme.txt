@@ -1,1 +1,1 @@
-A simple Hello World program
+CPEN 333 @ UBC
